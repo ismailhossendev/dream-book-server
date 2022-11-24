@@ -92,7 +92,18 @@ app.post('/products', async (req, res) => {
     }
 });
 
-
+//get products
+app.get('/products', async (req, res) => {
+    let filter = {};
+    if (req.query.category) {
+        filter = { category: req.query.category }
+    }
+    if (req.query.ads) {
+        filter = { ads: true }
+    }
+    const result = await products.find(filter).toArray();
+    res.send(result);
+});
 
 
 
