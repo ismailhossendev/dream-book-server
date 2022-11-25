@@ -42,7 +42,7 @@ app.get('/category/:id', async (req, res) => {
     const id = req.params.id;
     const category = await categories.findOne({ _id: ObjectId(id) });
 
-    const filter = { category: category.name, status: "Available" };
+    const filter = { category: category.name, status: "Available" || "booked" };
     const result = await products.find(filter).toArray();
     res.send(result);
 });
@@ -139,19 +139,14 @@ app.get('/my-products', async (req, res) => {
 
 //book a product 
 
-app.put('/book', async (req, res) => {
+app.post('/book', async (req, res) => {
     const id = req.query.id;
     const details = req.body;
+    console.log(details);
     const filter = { _id: ObjectId(id) };
     const option = { upsert: true };
     const update = {
-        $set: {
-            status: "Booked",
-            buyerName: details.buyerName,
-            buyerEmail: details.buyerEmail,
-            buyerPhone: details.buyerPhone,
-            meetingPoint: details.meetingPoint,
-        }
+        $set: details
     };
     const result = await products.updateOne(filter, update, option);
     if (result.modifiedCount) {
