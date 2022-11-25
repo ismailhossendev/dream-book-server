@@ -28,11 +28,27 @@ app.get('/', (req, res) => {
     })
 })
 
+//manage categories
+
+//get all categories
 app.get('/categories', async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit) : 0;
     const result = await categories.find({}).limit(limit).toArray();
     res.send(result);
 })
+
+//get single category
+app.get('/category/:id', async (req, res) => {
+    const id = req.params.id;
+    const category = await categories.findOne({ _id: ObjectId(id) });
+
+    const filter = { category: category.name, status: "Available" };
+    const result = await products.find(filter).toArray();
+    res.send(result);
+});
+
+
+
 
 //manage users
 
@@ -47,6 +63,7 @@ app.post('/users', async (req, res) => {
         })
     }
 
+    user.verified = false;
     const result = await users.insertOne(user);
     if (result.insertedId) {
         res.send({
@@ -77,6 +94,7 @@ app.get('/user', async (req, res) => {
 //create product
 app.post('/products', async (req, res) => {
     const product = req.body;
+    product.status = "Available";
     const result = await products.insertOne(product);
     if (result.insertedId) {
         res.send({
@@ -95,13 +113,26 @@ app.post('/products', async (req, res) => {
 //get products
 app.get('/products', async (req, res) => {
     let filter = {};
-    if (req.query.category) {
-        filter = { category: req.query.category }
-    }
     if (req.query.ads) {
-        filter = { ads: true }
+        filter = { ads: true, }
     }
+    filter.status = "Available"
     const result = await products.find(filter).toArray();
+    res.send(result);
+});
+
+//get product details 
+app.get('/product/:id', async (req, res) => {
+    const id = req.params.id;
+    const result = await products.findOne({ _id: ObjectId(id) });
+    res.send(result);
+});
+
+
+// my products
+app.get('/my-products', async (req, res) => {
+    const email = req.query.email;
+    const result = await products.find({ sellerEmail: email }).toArray();
     res.send(result);
 });
 
