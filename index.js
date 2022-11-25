@@ -18,6 +18,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 const categories = client.db("dream_book").collection("categories");
 const users = client.db("dream_book").collection("users");
 const products = client.db("dream_book").collection("products");
+const bookings = client.db("dream_book").collection("bookings");
 
 //routes
 app.get('/', (req, res) => {
@@ -135,6 +136,27 @@ app.get('/my-products', async (req, res) => {
     const result = await products.find({ sellerEmail: email }).toArray();
     res.send(result);
 });
+
+
+//book a product 
+
+app.post('/book', async (req, res) => {
+    const booking = req.body;
+    const result = await bookings.insertOne(booking);
+    if (result.insertedId) {
+        res.send({
+            success: true,
+            message: 'Book booking successfully'
+        })
+    }
+    else {
+        res.send({
+            success: false,
+            message: 'Book Not Booked Please Try Again'
+        })
+    }
+})
+
 
 
 
