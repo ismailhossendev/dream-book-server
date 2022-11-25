@@ -18,7 +18,6 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 const categories = client.db("dream_book").collection("categories");
 const users = client.db("dream_book").collection("users");
 const products = client.db("dream_book").collection("products");
-const bookings = client.db("dream_book").collection("bookings");
 
 //routes
 app.get('/', (req, res) => {
@@ -140,19 +139,31 @@ app.get('/my-products', async (req, res) => {
 
 //book a product 
 
-app.post('/book', async (req, res) => {
-    const booking = req.body;
-    const result = await bookings.insertOne(booking);
-    if (result.insertedId) {
+app.put('/book', async (req, res) => {
+    const id = req.query.id;
+    const details = req.body;
+    const filter = { _id: ObjectId(id) };
+    const option = { upsert: true };
+    const update = {
+        $set: {
+            status: "Booked",
+            buyerName: details.buyerName,
+            buyerEmail: details.buyerEmail,
+            buyerPhone: details.buyerPhone,
+            meetingPoint: details.meetingPoint,
+        }
+    };
+    const result = await products.updateOne(filter, update, option);
+    if (result.modifiedCount) {
         res.send({
             success: true,
-            message: 'Book booking successfully'
+            message: 'Book booked successfully'
         })
     }
     else {
         res.send({
             success: false,
-            message: 'Book Not Booked Please Try Again'
+            message: 'Book not booked'
         })
     }
 })
