@@ -54,6 +54,25 @@ app.get('/reports', async (req, res) => {
     const result = await reports.find({}).toArray();
     res.send(result);
 });
+//delete reported product
+app.delete('/reports', async (req, res) => {
+    const id = req.query.id;
+    const result = await products.deleteOne({ _id: ObjectId(id) });
+    if (result.deletedCount) {
+        res.send({
+            success: true,
+            message: 'product deleted successfully'
+        })
+    }
+    else {
+        res.send({
+            success: false,
+            message: 'product not deleted'
+        })
+    }
+
+})
+
 
 
 //manage categories
