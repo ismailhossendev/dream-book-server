@@ -58,6 +58,7 @@ app.get('/reports', async (req, res) => {
 app.delete('/reports', async (req, res) => {
     const id = req.query.id;
     const result = await products.deleteOne({ _id: ObjectId(id) });
+    const result2 = await reports.deleteOne({ _id: ObjectId(req.query.reportId) });
     if (result.deletedCount) {
         res.send({
             success: true,
