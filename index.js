@@ -18,6 +18,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 const categories = client.db("dream_book").collection("categories");
 const users = client.db("dream_book").collection("users");
 const products = client.db("dream_book").collection("products");
+const reports = client.db("dream_book").collection("reports");
 
 //routes
 app.get('/', (req, res) => {
@@ -27,6 +28,27 @@ app.get('/', (req, res) => {
         message: 'server is running'
     })
 })
+
+
+
+//reports
+app.post('/report', async (req, res) => {
+    const report = req.body;
+    const result = await reports.insertOne(report);
+    if (result.insertedId) {
+        res.send({
+            success: true,
+            message: 'report sent successfully'
+        })
+    } else {
+        res.send({
+            success: false,
+            message: 'report not sent'
+        })
+    }
+})
+
+
 
 //manage categories
 
@@ -42,7 +64,7 @@ app.get('/category/:id', async (req, res) => {
     const id = req.params.id;
     const category = await categories.findOne({ _id: ObjectId(id) });
 
-    const filter = { category: category.name, status: "Available" || "booked" };
+    const filter = { category: category.name, status: { $ne: "Paid" } };
     const result = await products.find(filter).toArray();
     res.send(result);
 });
@@ -112,11 +134,11 @@ app.post('/products', async (req, res) => {
 
 //get products
 app.get('/products', async (req, res) => {
-    let filter = {};
+    let filter = { status: { $ne: "Paid" } };
     if (req.query.ads) {
         filter = { ads: true, }
     }
-    filter.status = "Available"
+    // filter.status = "Available"
     const result = await products.find(filter).toArray();
     res.send(result);
 });
