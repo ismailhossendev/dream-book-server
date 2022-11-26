@@ -36,6 +36,14 @@ app.get('/', (req, res) => {
 //crete report 
 app.post('/report', async (req, res) => {
     const report = req.body;
+
+    if (!report.reporterName) {
+        res.send({
+            success: false,
+            message: 'Please Login First'
+        })
+    }
+
     const alreadyReported = await reports.findOne({ productId: report.productId });
     if (alreadyReported) {
         return res.send({
