@@ -36,6 +36,13 @@ app.get('/', (req, res) => {
 //crete report 
 app.post('/report', async (req, res) => {
     const report = req.body;
+    const alreadyReported = await reports.findOne({ productId: report.productId });
+    if (alreadyReported) {
+        res.send({
+            success: false,
+            message: 'already reported'
+        })
+    }
     const result = await reports.insertOne(report);
     if (result.insertedId) {
         res.send({
