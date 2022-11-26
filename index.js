@@ -160,6 +160,45 @@ app.post('/users', async (req, res) => {
     }
 });
 
+//update user photo
+app.put('upload-profile', async (req, res) => {
+    const email = req.query.email;
+    const profile = req.body.profile;
+
+    const update = { $set: { profile: profile } };
+    const option = { upsert: true };
+    const result = await users.updateOne({ email: email }, update, option);
+    if (result.modifiedCount) {
+        res.send({
+            success: true,
+            message: 'profile updated successfully'
+        })
+    } else {
+        res.send({
+            success: false,
+            message: 'Something went wrong'
+        })
+    }
+})
+
+// verify seller
+app.patch('/seller-verify', async (req, res) => {
+    const email = req.query.email;
+    const update = { $set: { verified: true } };
+    const result = await users.updateOne({ email: email }, update);
+    if (result.modifiedCount) {
+        res.send({
+            success: true,
+            message: 'Seller verified successfully'
+        })
+    } else {
+        res.send({
+            success: false,
+            message: 'Something went wrong'
+        })
+    }
+})
+
 //create user with google
 app.post('/google', async (req, res) => {
     const user = req.body;
