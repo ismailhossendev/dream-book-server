@@ -165,7 +165,7 @@ app.post('/google', async (req, res) => {
     const alreadyExist = await users.findOne({ email: user.email });
     if (alreadyExist) {
         return res.send({
-            success: false,
+            success: true,
             message: 'Successfully logged in'
         })
     }
