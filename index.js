@@ -161,9 +161,9 @@ app.post('/users', async (req, res) => {
 });
 
 //update user photo
-app.put('upload-profile', async (req, res) => {
+app.put('/upload-profile', async (req, res) => {
     const email = req.query.email;
-    const profile = req.body.profile;
+    const profile = req.query.profile;
 
     const update = { $set: { profile: profile } };
     const option = { upsert: true };
@@ -197,6 +197,13 @@ app.patch('/seller-verify', async (req, res) => {
             message: 'Something went wrong'
         })
     }
+})
+
+//get all users
+app.get('/users', async (req, res) => {
+    const filter = { role: req.query.role };
+    const result = await users.find(filter).toArray();
+    res.send(result);
 })
 
 //create user with google
@@ -266,19 +273,8 @@ app.post('/products', async (req, res) => {
 
 //get products
 app.get('/products', async (req, res) => {
-    let filter = { status: { $ne: "Paid" } };
-    if (req.query.ads) {
-        filter = { ads: true, }
-    }
-    // filter.status = "Available"
+    let filter = { status: { $ne: "Paid" }, ads: true };
     const result = await products.find(filter).toArray();
-    res.send(result);
-});
-
-//get product details 
-app.get('/product/:id', async (req, res) => {
-    const id = req.params.id;
-    const result = await products.findOne({ _id: ObjectId(id) });
     res.send(result);
 });
 
@@ -292,7 +288,6 @@ app.get('/my-products', async (req, res) => {
 
 
 //book a product 
-
 app.post('/book', async (req, res) => {
     const id = req.query.id;
     const details = req.body;
@@ -317,7 +312,7 @@ app.post('/book', async (req, res) => {
     }
 })
 
-// get booked products
+// get booked products (my orders)
 app.get('/booked-products', async (req, res) => {
     const email = req.query.email;
     const result = await products.find({ buyerEmail: email }).toArray();
