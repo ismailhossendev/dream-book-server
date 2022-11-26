@@ -32,6 +32,8 @@ app.get('/', (req, res) => {
 
 
 //reports
+
+//crete report 
 app.post('/report', async (req, res) => {
     const report = req.body;
     const result = await reports.insertOne(report);
@@ -47,7 +49,11 @@ app.post('/report', async (req, res) => {
         })
     }
 })
-
+// get all reports
+app.get('/reports', async (req, res) => {
+    const result = await reports.find({}).toArray();
+    res.send(result);
+});
 
 
 //manage categories
