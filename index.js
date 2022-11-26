@@ -38,7 +38,7 @@ app.post('/report', async (req, res) => {
     const report = req.body;
     const alreadyReported = await reports.findOne({ productId: report.productId });
     if (alreadyReported) {
-        res.send({
+        return res.send({
             success: false,
             message: 'already reported'
         })
@@ -64,18 +64,30 @@ app.get('/reports', async (req, res) => {
 //delete reported product
 app.delete('/reports', async (req, res) => {
     const id = req.query.id;
-    const result = await products.deleteOne({ _id: ObjectId(id) });
-    const result2 = await reports.deleteOne({ _id: ObjectId(req.query.reportId) });
-    if (result.deletedCount) {
+    let success;
+
+    if (id) {
+        const result = await products.deleteOne({ _id: ObjectId(id) });
+        if (result.deletedCount) {
+            success = true;
+        }
+    }
+    if (req.query.reportId) {
+        const result2 = await reports.deleteOne({ _id: ObjectId(req.query.reportId) });
+        if (result2.deletedCount) {
+            success = true;
+        }
+    }
+    if (success) {
         res.send({
             success: true,
-            message: 'product deleted successfully'
+            message: ' deleted successfully'
         })
     }
     else {
         res.send({
             success: false,
-            message: 'product not deleted'
+            message: 'Not deleted'
         })
     }
 
@@ -218,6 +230,12 @@ app.post('/book', async (req, res) => {
     }
 })
 
+// get booked products
+app.get('/booked-products', async (req, res) => {
+    const email = req.query.email;
+    const result = await products.find({ buyerEmail: email }).toArray();
+    res.send(result);
+})
 
 
 
