@@ -129,6 +129,13 @@ app.post('/users', async (req, res) => {
             message: 'User not created'
         })
     }
+    const alreadyExist = await users.findOne({ email: user.email });
+    if (alreadyExist) {
+        return res.send({
+            success: false,
+            message: 'User already exist'
+        })
+    }
 
     user.verified = false;
     const result = await users.insertOne(user);
@@ -144,6 +151,39 @@ app.post('/users', async (req, res) => {
         })
     }
 });
+
+//create user with google
+app.post('/google', async (req, res) => {
+    const user = req.body;
+
+    if (user.role === 'admin') {
+        return res.status(403).send({
+            success: false,
+            message: 'User not created'
+        })
+    }
+    const alreadyExist = await users.findOne({ email: user.email });
+    if (alreadyExist) {
+        return res.send({
+            success: false,
+            message: 'Successfully logged in'
+        })
+    }
+    user.verified = false;
+    const result = await users.insertOne(user);
+    if (result.insertedId) {
+        res.send({
+            success: true,
+            message: 'User created successfully'
+        })
+    } else {
+        res.send({
+            success: false,
+            message: 'User not created'
+        })
+    }
+});
+
 
 //get user details
 app.get('/user', async (req, res) => {
