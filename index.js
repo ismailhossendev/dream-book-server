@@ -203,9 +203,27 @@ app.patch('/seller-verify', async (req, res) => {
 app.get('/users', async (req, res) => {
     const filter = { role: req.query.role };
     const result = await users.find(filter).toArray();
-    result.name = result.firstName + ' ' + result.lastName;
     res.send(result);
 })
+
+// delete user
+app.delete('/users', async (req, res) => {
+    const email = req.query.email;
+    const result = await users.deleteOne({ email: email });
+    if (result.deletedCount) {
+        res.send({
+            success: true,
+            message: 'User deleted successfully'
+        })
+    } else {
+        res.send({
+            success: false,
+            message: 'Something went wrong'
+        })
+    }
+});
+
+
 
 //create user with google
 app.post('/google', async (req, res) => {
