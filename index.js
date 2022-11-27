@@ -19,6 +19,7 @@ const categories = client.db("dream_book").collection("categories");
 const users = client.db("dream_book").collection("users");
 const products = client.db("dream_book").collection("products");
 const reports = client.db("dream_book").collection("reports");
+const reviews = client.db("dream_book").collection("reviews");
 
 //routes
 app.get('/', (req, res) => {
@@ -344,9 +345,20 @@ app.patch('/run-ad', async (req, res) => {
     const filter = { _id: ObjectId(id) };
     const update = { $set: { ads: true } };
     const result = await products.updateOne(filter, update);
+    if (result.modifiedCount) {
+        res.send({
+            success: true,
+            message: 'Ad run successfully'
+        })
+    } else {
+        res.send({
+            success: false,
+            message: 'Something went wrong'
+        })
+    }
 });
 
-// user delete product 
+// seller delete product 
 app.delete('/products', async (req, res) => {
     const id = req.query.id;
     const result = await products.deleteOne({ _id: ObjectId(id) });
@@ -361,9 +373,13 @@ app.delete('/products', async (req, res) => {
             message: 'Something went wrong'
         })
     }
-}
+});
 
-
+// manage review 
+app.get('/reviews', async (req, res) => {
+    const result = await reviews.find({}).toArray();
+    res.send(result);
+});
 
 //listen
 app.listen(port, () => {
