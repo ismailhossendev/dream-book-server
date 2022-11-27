@@ -49,22 +49,23 @@ app.get('/jwt', (req, res) => {
 const verifyToken = (req, res, next) => {
     const bearerHeader = req.headers.authorization;
     if (!bearerHeader) {
-        return res.status(403).send({ message: 'unauthorized access' });
+        return res.status(401).send({ message: 'unauthorized access' });
     }
     const token = bearerHeader.split(' ')[1];
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
-            return res.status(401).send({ message: 'access forbidden' });
+            return res.status(403).send({ message: 'access forbidden' });
         }
         req.email = decoded.email;
         next();
     });
+
 };
 
 // admin verify token
 const verifyAdmin = async (req, res, next) => {
     const email = req.email;
-    const result = users.findOne({ email: email });
+    const result = await users.findOne({ email: email });
     if (result.role !== "admin") {
         return res.status(401).send({ message: "access forbidden" });
     }
@@ -74,7 +75,7 @@ const verifyAdmin = async (req, res, next) => {
 // verify seller 
 const verifySeller = async (req, res, next) => {
     const email = req.email;
-    const result = users.findOne({ email: email });
+    const result = await users.findOne({ email: email });
     if (result.role !== "seller") {
         return res.status(401).send({ message: "access forbidden" });
     }
@@ -84,7 +85,7 @@ const verifySeller = async (req, res, next) => {
 // verify buyer 
 const verifyBuyer = async (req, res, next) => {
     const email = req.email;
-    const result = users.findOne({ email: email });
+    const result = await users.findOne({ email: email });
     if (result.role !== "buyer") {
         return res.status(401).send({ message: "access forbidden" });
     }
@@ -187,7 +188,7 @@ app.get('/reports', verifyToken, verifyAdmin, async (req, res) => {
 });
 
 //delete reported product
-app.delete('/reports', async (req, res) => {
+app.delete('/reports', verifyToken, verifyAdmin, async (req, res) => {
     const id = req.query.id;
     let success;
 
@@ -230,10 +231,18 @@ app.get('/categories', async (req, res) => {
 })
 
 //get single category
-app.get('/category/:id', async (req, res) => {
+app.get('/category/:id', verifyToken, async (req, res) => {
     const id = req.params.id;
-    const category = await categories.findOne({ _id: ObjectId(id) });
+    const isUser = await users.findOne({ email: req.email });
+    if (!isUser) {
+        return res.send({
+            success: false,
+            message: 'You are not a user or access blocked'
+        })
+    }
 
+
+    const category = await categories.findOne({ _id: ObjectId(id) });
     const filter = { category: category.name, status: { $ne: "Paid" } };
     const result = await products.find(filter).toArray();
     res.send(result);
@@ -278,8 +287,15 @@ app.post('/users', async (req, res) => {
 });
 
 //update user photo
-app.put('/upload-profile', async (req, res) => {
+app.put('/upload-profile', verifyToken, async (req, res) => {
     const email = req.query.email;
+    if (email !== req.email) {
+        return res.send({
+            success: false,
+            message: 'You are not authorized'
+        })
+    }
+
     const profile = req.query.profile;
 
     const update = { $set: { profile: profile } };
@@ -299,7 +315,7 @@ app.put('/upload-profile', async (req, res) => {
 })
 
 // verify seller
-app.patch('/seller-verify', async (req, res) => {
+app.patch('/seller-verify', verifyToken, verifyAdmin, async (req, res) => {
     const email = req.query.email;
     const update = { $set: { verified: true } };
     const result = await users.updateOne({ email: email }, update);
@@ -317,14 +333,14 @@ app.patch('/seller-verify', async (req, res) => {
 })
 
 //get all users
-app.get('/users', async (req, res) => {
+app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
     const filter = { role: req.query.role };
     const result = await users.find(filter).toArray();
     res.send(result);
 })
 
 // delete user
-app.delete('/users', async (req, res) => {
+app.delete('/users', verifyToken, verifyAdmin, async (req, res) => {
     const email = req.query.email;
     const result = await users.deleteOne({ email: email });
     if (result.deletedCount) {
