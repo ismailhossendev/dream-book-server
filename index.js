@@ -203,6 +203,7 @@ app.patch('/seller-verify', async (req, res) => {
 app.get('/users', async (req, res) => {
     const filter = { role: req.query.role };
     const result = await users.find(filter).toArray();
+    result.name = result.firstName + ' ' + result.lastName;
     res.send(result);
 })
 
