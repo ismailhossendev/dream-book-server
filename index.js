@@ -3,6 +3,10 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 require('dotenv').config();
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const jwt = require('jsonwebtoken');
+
 
 const port = process.env.PORT || 5000;
 
@@ -12,7 +16,6 @@ app.use(express.json());
 
 
 //database 
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.odx3u2z.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 const categories = client.db("dream_book").collection("categories");
@@ -20,6 +23,7 @@ const users = client.db("dream_book").collection("users");
 const products = client.db("dream_book").collection("products");
 const reports = client.db("dream_book").collection("reports");
 const reviews = client.db("dream_book").collection("reviews");
+const payments = client.db('dream_book').collection('payments');
 
 //routes
 app.get('/', (req, res) => {
@@ -29,6 +33,117 @@ app.get('/', (req, res) => {
         message: 'server is running'
     })
 })
+
+
+//manage json web token
+
+//create jwt get method 
+app.get('/jwt', (req, res) => {
+    const email = req.query.email;
+    const token = jwt.sign({ email: email }, process.env.JWT_SECRET);
+    res.send({ token: token });
+});
+
+
+//verify jwt 
+const verifyToken = (req, res, next) => {
+    const bearerHeader = req.headers.authorization;
+    if (!bearerHeader) {
+        return res.status(403).send({ message: 'unauthorized access' });
+    }
+    const token = bearerHeader.split(' ')[1];
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'access forbidden' });
+        }
+        req.email = decoded.email;
+        next();
+    });
+};
+
+// admin verify token
+const verifyAdmin = async (req, res, next) => {
+    const email = req.email;
+    const result = users.findOne({ email: email });
+    if (result.role !== "admin") {
+        return res.status(401).send({ message: "access forbidden" });
+    }
+    next();
+};
+
+// verify seller 
+const verifySeller = async (req, res, next) => {
+    const email = req.email;
+    const result = users.findOne({ email: email });
+    if (result.role !== "seller") {
+        return res.status(401).send({ message: "access forbidden" });
+    }
+    next();
+};
+
+// verify buyer 
+const verifyBuyer = async (req, res, next) => {
+    const email = req.email;
+    const result = users.findOne({ email: email });
+    if (result.role !== "buyer") {
+        return res.status(401).send({ message: "access forbidden" });
+    }
+    next();
+};
+
+
+// manage payment 
+//crate payment intent
+app.post('/create-payment-intent', async (req, res) => {
+    const product = req.body;
+    const price = Number(product.price);
+    const amount = price * 100;
+
+    const paymentIntent = await stripe.paymentIntents.create({
+        currency: 'USD',
+        amount: amount,
+        "payment_method_types": [
+            "card"
+        ]
+    });
+    console.log(price);
+    console.log(paymentIntent.clientSecret);
+    res.send({
+        clientSecret: paymentIntent.client_secret,
+
+    });
+});
+
+//payment success
+app.post('/payments', async (req, res) => {
+    const payment = req.body;
+    const result = await payments.insertOne(payment);
+    const id = payment.productId;
+    const filter = { _id: ObjectId(id) }
+    const updatedDoc = {
+        $set: {
+            status: "Paid",
+            ads: false,
+            transactionId: payment.transactionId
+        }
+    }
+    const updatedResult = await products.updateOne(filter, updatedDoc);
+    if (updatedResult.modifiedCount) {
+        res.send({
+            success: true,
+
+            message: 'payment success'
+        })
+    } else {
+        res.send({
+            success: false,
+            message: 'payment failed'
+        })
+    }
+})
+
+
+
 
 
 
@@ -66,10 +181,11 @@ app.post('/report', async (req, res) => {
     }
 })
 // get all reports
-app.get('/reports', async (req, res) => {
+app.get('/reports', verifyToken, verifyAdmin, async (req, res) => {
     const result = await reports.find({}).toArray();
     res.send(result);
 });
+
 //delete reported product
 app.delete('/reports', async (req, res) => {
     const id = req.query.id;
