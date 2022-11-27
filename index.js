@@ -338,6 +338,31 @@ app.get('/booked-products', async (req, res) => {
     res.send(result);
 })
 
+// run ad 
+app.patch('/run-ad', async (req, res) => {
+    const id = req.query.id;
+    const filter = { _id: ObjectId(id) };
+    const update = { $set: { ads: true } };
+    const result = await products.updateOne(filter, update);
+});
+
+// user delete product 
+app.delete('/products', async (req, res) => {
+    const id = req.query.id;
+    const result = await products.deleteOne({ _id: ObjectId(id) });
+    if (result.deletedCount) {
+        res.send({
+            success: true,
+            message: 'Product deleted successfully'
+        })
+    } else {
+        res.send({
+            success: false,
+            message: 'Something went wrong'
+        })
+    }
+}
+
 
 
 //listen
