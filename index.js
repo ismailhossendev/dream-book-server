@@ -287,17 +287,9 @@ app.post('/users', async (req, res) => {
 });
 
 //update user photo
-app.put('/upload-profile', verifyToken, async (req, res) => {
+app.put('/upload-profile', async (req, res) => {
     const email = req.query.email;
-    if (email !== req.email) {
-        return res.send({
-            success: false,
-            message: 'You are not authorized'
-        })
-    }
-
     const profile = req.query.profile;
-
     const update = { $set: { profile: profile } };
     const option = { upsert: true };
     const result = await users.updateOne({ email: email }, update, option);
@@ -405,7 +397,7 @@ app.get('/user', async (req, res) => {
 //manage products
 
 //create product
-app.post('/products', async (req, res) => {
+app.post('/products', verifyToken, verifySeller, async (req, res) => {
     const product = req.body;
     product.status = "Available";
     const result = await products.insertOne(product);
@@ -432,8 +424,14 @@ app.get('/products', async (req, res) => {
 
 
 // my products
-app.get('/my-products', async (req, res) => {
+app.get('/my-products', verifyToken, verifySeller, async (req, res) => {
     const email = req.query.email;
+    if (email !== req.email) {
+        return res.send({
+            success: false,
+            message: 'You are not authorized'
+        })
+    }
     const result = await products.find({ sellerEmail: email }).toArray();
     res.send(result);
 });
@@ -465,14 +463,20 @@ app.post('/book', async (req, res) => {
 })
 
 // get booked products (my orders)
-app.get('/booked-products', async (req, res) => {
+app.get('/booked-products', verifyToken, verifyBuyer, async (req, res) => {
     const email = req.query.email;
+    if (email !== req.email) {
+        return res.send({
+            success: false,
+            message: 'You are not authorized'
+        })
+    }
     const result = await products.find({ buyerEmail: email }).toArray();
     res.send(result);
 })
 
 // run ad 
-app.patch('/run-ad', async (req, res) => {
+app.patch('/run-ad', verifyToken, verifySeller, async (req, res) => {
     const id = req.query.id;
     const filter = { _id: ObjectId(id) };
     const update = { $set: { ads: true } };
@@ -491,7 +495,7 @@ app.patch('/run-ad', async (req, res) => {
 });
 
 // seller delete product 
-app.delete('/products', async (req, res) => {
+app.delete('/products', verifyToken, verifySeller, async (req, res) => {
     const id = req.query.id;
     const result = await products.deleteOne({ _id: ObjectId(id) });
     if (result.deletedCount) {
